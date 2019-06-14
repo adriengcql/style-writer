@@ -1,0 +1,32 @@
+{
+  "name": "style-writer",
+  "version": "1.0.0",
+  "description": "Write properties to style file using selector",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "prepublish": "npm run build",
+    "dev": "tsc -w",
+    "start": "node lib/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adriengcql/style-writer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/adriengcql/style-writer/issues"
+  },
+  "homepage": "https://github.com/adriengcql/style-writer#readme",
+  "author": "Adrien Gicquel",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^12.0.4",
+    "tsc": "^1.20150623.0",
+    "typescript": "^3.5.1"
+  },
+  "dependencies": {
+    "fs-extra": "^8.0.1"
+  }
+}
