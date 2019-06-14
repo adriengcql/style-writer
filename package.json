@@ -1,5 +1,5 @@
 {
-  "name": "style-writer",
+  "name": "stylesheet-writer",
   "version": "1.0.0",
   "description": "Write properties to style file using selector",
   "main": "lib/index.js",
@@ -13,12 +13,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/adriengcql/style-writer.git"
+    "url": "git+https://github.com/adriengcql/stylesheet-writer.git"
   },
   "bugs": {
-    "url": "https://github.com/adriengcql/style-writer/issues"
+    "url": "https://github.com/adriengcql/stylesheet-writer/issues"
   },
-  "homepage": "https://github.com/adriengcql/style-writer#readme",
+  "homepage": "https://github.com/adriengcql/stylesheet-writer#readme",
   "author": "Adrien Gicquel",
   "license": "ISC",
   "devDependencies": {

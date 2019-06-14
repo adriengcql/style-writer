@@ -1,4 +1,4 @@
-# Style Writer
+# Stylesheet Writer
 
 Write properties by selector to css, scss or less files.
 
@@ -8,10 +8,10 @@ Given a selector, a property name and a value, the property will be overwritten 
 ## Quick start
 
 ```
-npm install style-writer
+npm install stylesheet-writer
 ```
 ```js
-import * as sw from 'style-writer'
+import * as sw from 'stylesheet-writer'
 
 const style = sw.open('__YOUR_PATH_TO_FILE__')
 style.writeProperty('.container', 'color', 'blue') // writeProperty(__SELECTOR__, __PROPERTY_NAME__, __VALUE__)
