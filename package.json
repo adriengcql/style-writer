@@ -9,7 +9,7 @@
     "build": "tsc",
     "prepublish": "npm run build",
     "dev": "tsc -w",
-    "start": "node lib/index.js"
+    "start": "node test/test.js"
   },
   "repository": {
     "type": "git",

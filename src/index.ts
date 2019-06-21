@@ -17,11 +17,11 @@ class File {
     private content: string
     private path: string
     private options: any
-    private ext: string
+    private isCSS: boolean
 
     constructor(file: string, options?: any) {
         this.path = file
-        this.ext = path.extname(file)
+        this.isCSS = path.extname(file) === '.css'
         this.content = fs.readFileSync(file, 'utf-8')
         this.options = options || {}
         this.options.autosave = this.options.autosave === 'undefined' ? true : this.options.autosave
@@ -38,21 +38,68 @@ class File {
         }
 
         // Build selector regexp
+        let selectorP = selector.trim();
+        // save everything that is in brackets or parens
+        const escaped = selectorP.match(escapePattern) || []
+        // escape regexp special characters
+        selectorP = selectorP.replace(/[-[\]{}()*+:=?.,\\/^$|#]/g, '\\$&')
+        // delete saved brackets and paren for now
+        escaped.map((e: any, i: number) => selectorP = selectorP.replace(e, '__escaped' + i))
 
-        const singleSelectors = selector.split(',').map(s => this.processSelector(s))
-        const selectorRE = '(' + getPermutations(singleSelectors).map((s) => s.join('\\s*,\\s*')).join('|') + ')'
+        let singleSelectors = selectorP.split('\\,')
+        console.log(singleSelectors);
 
+        let sss: string[] = []
+        if (!this.isCSS && singleSelectors.length > 1) {
+            const ss = singleSelectors.map((s) => s.split(/(?<=\w)(?=(\\\:){1,2}|\\\.|\\\#|\s)/).filter(t => t && t.trim()))
+            console.log(ss);
+
+            let a = ''
+            let b = ''
+            let prefix = ''
+            do {
+                console.log(a.replace(/\\/g, '\\\\'))
+                if (a) {
+                    singleSelectors = singleSelectors.map(s => s.trim().replace(new RegExp('^&?' + b.replace(/\\/g, '\\\\') + '(?=\\s)'), '').replace(new RegExp('^&?' + b.replace(/\\/g, '\\\\')), '&'))
+                }
+                console.log(singleSelectors);
+
+                const selectors = singleSelectors.map(s => s ? this.processSelector(s, true) : '&')
+                console.log(prefix);
+
+                const p = prefix ? this.processSelector(prefix, false) + fullNestedPattern : ''
+                sss.push(p + '(' + getPermutations(selectors).map((s) => s.join('\\s*,\\s*')).join('|') + ')')
+                a = ss[0][0]
+                b = a.trim()
+                prefix += a
+            } while (ss.reduce((acc, s) => {
+                const r = s.shift()
+                return acc && r !== undefined && r.trim() === b
+            }, true))
+        }
+        else {
+            const selectors = singleSelectors.map(s => this.processSelector(s, this.isCSS))
+            sss = getPermutations(selectors).map((s) => s.join('\\s*,\\s*'))
+        }
+
+        let selectorRE = '(' + sss.join('|') + ')'
+
+        // inject saved brackets and parens
+        escaped.map((e: any, i: number) => selectorRE = selectorRE.replace('__escaped' + i, e))
+        console.log(selectorRE)
         // Build global regexp
-        const s3 = this.ext === '.css' ? '[^{}]*' : '([^{}]|' + nestedPattern + ')*'
+        const s3 = this.isCSS ? '[^{}]*' : '([^{}]|' + nestedPattern + ')*'
         const gre = new RegExp('(' + selectorRE + '\\s*{' + s3 + '[^\\w\\-]' + propertyName + '\\s*:)[^;}]*')
-
+        console.log(gre)
         if (gre.test(this.content)) {
             // the property is found for the given selector : replace the value
             this.content = this.content.replace(gre, '$1 ' + propertyValue)
         }
         else {
             // the property is not found for that selector : test if the selector exists
-            const sre = new RegExp(selectorRE + '\\s*{([^{}]|' + nestedPattern + ')*')
+            const sre = new RegExp(selectorRE + '\\s*{' + s3)
+            console.log(sre);
+
             if (sre.test(this.content)) {
                 // the selector is found : add the property
                 this.content = this.content.replace(sre, `$&    ${propertyName}: ${propertyValue};\n`);
@@ -76,31 +123,22 @@ class File {
         this.content = fs.readFileSync(this.path, 'utf-8')
     }
 
-    private processSelector(selector: string) {
-        selector = selector.trim();
-        // save everything that is in brackets or parens
-        const escaped = selector.match(escapePattern) || []
-        // escape regexp special characters
-        let selectorRE = selector.replace(/[-[\]{}()*+:=?.,\\/^$|#]/g, '\\$&')
-        // delete saved brackets and paren for now
-        escaped.map((e: any, i: number) => selectorRE = selectorRE.replace(e, '__escaped' + i))
-        // handle multi spaces
-        const s0 = this.ext === '.css' ? '\\s*$1\\s*' : '(\\s*|' + fullNestedPattern + '(&\\s*))$1\\s*'
+    private processSelector(selector: string, css: boolean) {
 
-        selectorRE = selectorRE.replace(/\s*(>|\\\+|~)\s*/g, s0)
-        selectorRE = selectorRE.replace(/\s*(\\\,)\s*/g, s0)
+        // handle multi spaces
+        const s0 = css ? '\\s*$1\\s*' : '(\\s*|' + fullNestedPattern + '(&\\s*))$1\\s*'
+
+        selector = selector.replace(/\s*(>|\\\+|~)\s*/g, s0)
 
         // replace spaces in selector
-        const s1 = this.ext === '.css' ? '\\s+' : '(\\s+|' + fullNestedPattern + '(&\\s+)?)'
-        selectorRE = selectorRE.replace(/\s/g, s1)
+        const s1 = css ? '\\s+' : '(\\s+|' + fullNestedPattern + '(&\\s+)?)'
+        selector = selector.replace(/\s/g, s1)
         // replace selector special character
-        const s2 = this.ext === '.css' ? '$&' : '($&|' + fullNestedPattern + '&$&)'
+        const s2 = css ? '$&' : '($&|' + fullNestedPattern + '&$&)'
 
-        selectorRE = selectorRE.replace(/(?<=\w)((\\\:){1,2}|\\\.|\\\#)/g, s2)
+        selector = selector.replace(/(?<=\w)((\\\:){1,2}|\\\.|\\\#)/g, s2)
 
-        // inject saved brackets and parens
-        escaped.map((e: any, i: number) => selectorRE = selectorRE.replace('__escaped' + i, e))
-        return selectorRE
+        return selector
     }
 }
 
@@ -122,8 +160,3 @@ function getPermutations(elts: string[]): string[][] {
 export function open(file: string, options?: any) {
     return new File(file, options)
 }
-
-
-// const style = open(path.resolve(__dirname, '../test/hello.css'), { autosave: false, autorefresh: false })
-// style.writeProperty('.container .test, .container .hello', 'color', 'blue')
-// style.save()
