@@ -4,7 +4,7 @@ import * as path from 'path'
 // a pattern for to handle nested curly brackets
 const pattern = '\\{(?:(?:__pattern__)|(?:[^{}]))*\\}'
 let nestedPattern = '\\{(?:(?:__pattern__)|(?:[^{}]))*\\}'
-for (let i = 0; i < 0; i++) {
+for (let i = 0; i < 3; i++) {
     nestedPattern = nestedPattern.replace('__pattern__', pattern)
 }
 nestedPattern = '(' + nestedPattern.replace('__pattern__', '\\{(?:[^{}])*\\}') + ')'
@@ -41,12 +41,10 @@ class File {
 
         const singleSelectors = selector.split(',').map(s => this.processSelector(s))
         const selectorRE = '(' + getPermutations(singleSelectors).map((s) => s.join('\\s*,\\s*')).join('|') + ')'
-        console.log(selectorRE);
 
         // Build global regexp
         const s3 = this.ext === '.css' ? '[^{}]*' : '([^{}]|' + nestedPattern + ')*'
         const gre = new RegExp('(' + selectorRE + '\\s*{' + s3 + '[^\\w\\-]' + propertyName + '\\s*:)[^;}]*')
-        console.log(gre);
 
         if (gre.test(this.content)) {
             // the property is found for the given selector : replace the value
@@ -86,46 +84,24 @@ class File {
         let selectorRE = selector.replace(/[-[\]{}()*+:=?.,\\/^$|#]/g, '\\$&')
         // delete saved brackets and paren for now
         escaped.map((e: any, i: number) => selectorRE = selectorRE.replace(e, '__escaped' + i))
-
-        console.log(this.ext);
-
         // handle multi spaces
         const s0 = this.ext === '.css' ? '\\s*$1\\s*' : '(\\s*|' + fullNestedPattern + '(&\\s*))$1\\s*'
 
         selectorRE = selectorRE.replace(/\s*(>|\\\+|~)\s*/g, s0)
         selectorRE = selectorRE.replace(/\s*(\\\,)\s*/g, s0)
-        console.log(selectorRE);
 
         // replace spaces in selector
         const s1 = this.ext === '.css' ? '\\s+' : '(\\s+|' + fullNestedPattern + '(&\\s+)?)'
         selectorRE = selectorRE.replace(/\s/g, s1)
-        console.log(selectorRE)
         // replace selector special character
         const s2 = this.ext === '.css' ? '$&' : '($&|' + fullNestedPattern + '&$&)'
 
         selectorRE = selectorRE.replace(/(?<=\w)((\\\:){1,2}|\\\.|\\\#)/g, s2)
 
-
         // inject saved brackets and parens
         escaped.map((e: any, i: number) => selectorRE = selectorRE.replace('__escaped' + i, e))
-        console.log(selectorRE);
         return selectorRE
     }
-}
-
-function getCombinations(elts: string[]) {
-    const result: string[][] = [];
-    const f = function (prefix: string[], items: string[]) {
-        for (let i = 0; i < items.length; i++) {
-            const res = prefix.concat([items[i]])
-            if (res.length === elts.length) {
-                result.push(res)
-            }
-            f(res, items.slice(i + 1));
-        }
-    }
-    f([], elts);
-    return result;
 }
 
 function getPermutations(elts: string[]): string[][] {
