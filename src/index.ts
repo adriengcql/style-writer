@@ -47,25 +47,19 @@ class File {
         escaped.map((e: any, i: number) => selectorP = selectorP.replace(e, '__escaped' + i))
 
         let singleSelectors = selectorP.split('\\,')
-        console.log(singleSelectors);
 
         let sss: string[] = []
         if (!this.isCSS && singleSelectors.length > 1) {
             const ss = singleSelectors.map((s) => s.split(/(?<=\w)(?=(\\\:){1,2}|\\\.|\\\#|\s)/).filter(t => t && t.trim()))
-            console.log(ss);
-
             let a = ''
             let b = ''
             let prefix = ''
             do {
-                console.log(a.replace(/\\/g, '\\\\'))
                 if (a) {
                     singleSelectors = singleSelectors.map(s => s.trim().replace(new RegExp('^&?' + b.replace(/\\/g, '\\\\') + '(?=\\s)'), '').replace(new RegExp('^&?' + b.replace(/\\/g, '\\\\')), '&'))
                 }
-                console.log(singleSelectors);
 
                 const selectors = singleSelectors.map(s => s ? this.processSelector(s, true) : '&')
-                console.log(prefix);
 
                 const p = prefix ? this.processSelector(prefix, false) + fullNestedPattern : ''
                 sss.push(p + '(' + getPermutations(selectors).map((s) => s.join('\\s*,\\s*')).join('|') + ')')
@@ -86,11 +80,9 @@ class File {
 
         // inject saved brackets and parens
         escaped.map((e: any, i: number) => selectorRE = selectorRE.replace('__escaped' + i, e))
-        console.log(selectorRE)
         // Build global regexp
         const s3 = this.isCSS ? '[^{}]*' : '([^{}]|' + nestedPattern + ')*'
         const gre = new RegExp('(' + selectorRE + '\\s*{' + s3 + '[^\\w\\-]' + propertyName + '\\s*:)[^;}]*')
-        console.log(gre)
         if (gre.test(this.content)) {
             // the property is found for the given selector : replace the value
             this.content = this.content.replace(gre, '$1 ' + propertyValue)
@@ -98,7 +90,6 @@ class File {
         else {
             // the property is not found for that selector : test if the selector exists
             const sre = new RegExp(selectorRE + '\\s*{' + s3)
-            console.log(sre);
 
             if (sre.test(this.content)) {
                 // the selector is found : add the property
